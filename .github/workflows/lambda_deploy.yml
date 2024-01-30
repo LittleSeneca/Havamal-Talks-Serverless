@@ -9,10 +9,23 @@ on:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }} 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       
+      - name: Install AWS CLI
+        run: |
+          pip install awscli --upgrade --user
+          export PATH=$PATH:$HOME/.local/bin
+
+      - name: Configure AWS CLI
+        run: |
+          aws configure set default.region us-east-1
+
       - name: Run cleanup.sh script
         run: |
           chmod +x cleanup.sh
