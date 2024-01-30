@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +12,7 @@ import (
 
 // fetchVulnerabilities sends a request to the NVD API to fetch vulnerabilities
 // of a specific severity, using an API key for authentication.
-func fetchVulnerabilities(severity string) {
+func fetchVulnerabilities(ctx context.Context, severity string) {
 	// Set the start and end dates for the API query.
 	pubStartDate := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	pubEndDate := time.Now().Format("2006-01-02")
@@ -42,6 +43,12 @@ func fetchVulnerabilities(severity string) {
 	}
 	defer resp.Body.Close()
 
+	// Check if the function is canceled and exit gracefully if so
+	if ctx.Err() != nil {
+		fmt.Println("Function canceled. Exiting gracefully.")
+		return
+	}
+
 	// Check if the HTTP request was not successful.
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("HTTP request failed with status code: %s\n", resp.Status)
@@ -68,6 +75,12 @@ func fetchVulnerabilities(severity string) {
 
 	// Iterate through each vulnerability in the response and print details.
 	for _, vulnerability := range nvdData.Vulnerabilities {
+		// Check if the function is canceled and exit gracefully if so
+		if ctx.Err() != nil {
+			fmt.Println("Function canceled. Exiting gracefully.")
+			return
+		}
+
 		// Print the CVE ID.
 		fmt.Println("CVE ID:", vulnerability.CVE.ID)
 
@@ -86,5 +99,11 @@ func fetchVulnerabilities(severity string) {
 		// Print a line break after each CVE.
 		fmt.Println()
 
+		// Pause for 1 second to prevent rate limiting and check cancellation again
+		time.Sleep(1 * time.Second)
+		if ctx.Err() != nil {
+			fmt.Println("Function canceled. Exiting gracefully.")
+			return
+		}
 	}
 }
