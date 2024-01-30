@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: AWS Lambda Deployment with Parameterized S3 Bucket
+Description: AWS Lambda Function Deployment
 
 Parameters:
   NvdApiKey:
@@ -10,11 +10,6 @@ Parameters:
     Description: S3 Bucket for Lambda Code
 
 Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref LambdaS3Bucket
-
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -60,6 +55,3 @@ Outputs:
   LambdaFunctionARN:
     Description: "ARN of the Lambda function"
     Value: !GetAtt MyLambdaFunction.Arn
-  S3BucketName:
-    Description: "S3 Bucket for Lambda Code"
-    Value: !Ref S3Bucket

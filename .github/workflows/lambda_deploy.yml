@@ -7,55 +7,63 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy-resources:
+  deploy-s3-bucket:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Deploy Resources using CloudFormation
-      run: |
-        aws cloudformation deploy \
-          --template-file cloudformation.yml \
-          --stack-name havamal-talks-serverless \
-          --parameter-overrides NvdApiKey=${{ secrets.NVD_API_KEY }} LambdaS3Bucket=${{ secrets.S3_BUCKET_NAME }} \
-          --capabilities CAPABILITY_IAM
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: us-east-1
+      - name: Deploy S3 Bucket using CloudFormation
+        run: |
+          aws cloudformation deploy \
+            --template-file s3-template.yml \
+            --stack-name havamal-talks-serverless-s3 \
+            --capabilities CAPABILITY_IAM
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
-  build-and-deploy-lambda:
+  build-upload-and-deploy-lambda:
     runs-on: ubuntu-latest
-    needs: deploy-resources
+    needs: deploy-s3-bucket
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.21.6'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21.6'
 
-    - name: Build
-      run: |
-        GOOS=linux GOARCH=amd64 go build -o bootstrap
-        zip function.zip bootstrap
+      - name: Build Lambda Function
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o bootstrap
+          zip function.zip bootstrap
 
-    - name: Upload to S3
-      run: aws s3 cp function.zip s3://${{ secrets.S3_BUCKET_NAME }}/function.zip
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: us-east-1
+      - name: Upload to S3
+        run: aws s3 cp function.zip s3://${{ secrets.S3_BUCKET_NAME }}/function.zip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
-    - name: Update AWS Lambda Function Code
-      run: |
-        aws lambda update-function-code \
-          --function-name havamal-talks-serverless \
-          --s3-bucket ${{ secrets.S3_BUCKET_NAME }} \
-          --s3-key function.zip
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: us-east-1
+      - name: Deploy Lambda Function using CloudFormation
+        run: |
+          aws cloudformation deploy \
+            --template-file lambda-fetch-template.yml \
+            --stack-name havamal-talks-serverless-lambda \
+            --parameter-overrides LambdaS3Bucket=${{ secrets.S3_BUCKET_NAME }} NvdApiKey=${{ secrets.NVD_API_KEY }} \
+            --capabilities CAPABILITY_IAM
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+      - name: Delete Stack if Deployment Fails
+        if: ${{ failure() }}
+        run: aws cloudformation delete-stack --stack-name havamal-talks-serverless-lambda
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
