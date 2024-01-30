@@ -5,23 +5,38 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
 // fetchVulnerabilities sends a request to the NVD API to fetch vulnerabilities
-// of a specific severity.
+// of a specific severity, using an API key for authentication.
 func fetchVulnerabilities(severity string) {
 	// Set the start and end dates for the API query.
-	pubStartDate := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	pubStartDate := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	pubEndDate := time.Now().Format("2006-01-02")
 
 	// Construct the NVD API URL with query parameters.
 	nvdURL := fmt.Sprintf("https://services.nvd.nist.gov/rest/json/cves/2.0?cvssV3Severity=%s&pubStartDate=%sT00:00:00.000&pubEndDate=%sT00:00:00.000", severity, pubStartDate, pubEndDate)
 
-	// Make the HTTP GET request to the NVD API.
-	resp, err := http.Get(nvdURL)
+	// Create a new HTTP request
+	req, err := http.NewRequest("GET", nvdURL, nil)
 	if err != nil {
-		// Print an error message if the request fails.
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	// Retrieve API key from environment variable
+	apiKey := os.Getenv("NVD_API_KEY")
+	if apiKey == "" {
+		fmt.Println("API key not set in environment variables")
+		return
+	}
+	req.Header.Add("X-Api-Key", apiKey)
+
+	// Make the HTTP request using the created request with the header
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		fmt.Println("Error making request to NVD:", err)
 		return
 	}

@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS Lambda Deployment with Parameterized S3 Bucket
+
+Parameters:
+  NvdApiKey:
+    Type: String
+    Description: NVD API Key
+  LambdaS3Bucket:
+    Type: String
+    Description: S3 Bucket for Lambda Code
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::${LambdaS3Bucket}/*'
+
+  MyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: go1.x
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: function.zip
+      Environment:
+        Variables:
+          NVD_API_KEY: !Ref NvdApiKey
+
+Outputs:
+  LambdaFunctionName:
+    Description: "Name of the Lambda function"
+    Value: !Ref MyLambdaFunction
+  LambdaFunctionARN:
+    Description: "ARN of the Lambda function"
+    Value: !GetAtt MyLambdaFunction.Arn
+  S3BucketName:
+    Description: "S3 Bucket for Lambda Code"
+    Value: !Ref LambdaS3Bucket

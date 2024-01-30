@@ -7,9 +7,26 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy-resources:
     runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
+    - name: Deploy Resources using CloudFormation
+      run: |
+        aws cloudformation deploy \
+          --template-file cloudformation.yml \
+          --stack-name havamal-talks-serverless \
+          --capabilities CAPABILITY_IAM
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+  build-and-deploy-lambda:
+    runs-on: ubuntu-latest
+    needs: deploy-resources
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -17,18 +34,27 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.21.6'  # Use the version of Go in your project
+        go-version: '1.21.6'
 
     - name: Build
       run: |
-        GOOS=linux GOARCH=amd64 go build -o main
-        zip function.zip main
+        GOOS=linux GOARCH=amd64 go build -o bootstrap
+        zip function.zip bootstrap
 
-    - name: Deploy to AWS Lambda
-      uses: appleboy/lambda-action@v0.0.5
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: us-east-1 
-        function_name: havamal-talks-collector
-        zip_file: function.zip
+    - name: Upload to S3
+      run: aws s3 cp function.zip s3://${{ secrets.S3_BUCKET_NAME }}/function.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+    - name: Update AWS Lambda Function Code
+      run: |
+        aws lambda update-function-code \
+          --function-name havamal-talks-serverless \
+          --s3-bucket ${{ secrets.S3_BUCKET_NAME }} \
+          --s3-key function.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
