@@ -1,0 +1,34 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.21.6'  # Use the version of Go in your project
+
+    - name: Build
+      run: |
+        GOOS=linux GOARCH=amd64 go build -o main
+        zip function.zip main
+
+    - name: Deploy to AWS Lambda
+      uses: appleboy/lambda-action@v0.0.5
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: us-east-1 
+        function_name: havamal-talks-collector
+        zip_file: function.zip
