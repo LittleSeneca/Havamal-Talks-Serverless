@@ -14,7 +14,7 @@ import (
 // of a specific severity, using an API key for authentication.
 func fetchVulnerabilities(ctx context.Context, severity string) {
 	// Set the start and end dates for the API query.
-	pubStartDate := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	pubStartDate := time.Now().AddDate(0, 0, -5).Format("2006-01-02")
 	pubEndDate := time.Now().Format("2006-01-02")
 
 	// Construct the NVD API URL with query parameters.

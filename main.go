@@ -15,7 +15,7 @@ func main() {
 	// Handle signals to cancel the context gracefully
 	go handleSignals(cancel)
 
-	severities := []string{"CRITICAL", "HIGH", "MEDIUM", "LOW"}
+	severities := []string{os.Getenv("PRIORITY")}
 	for _, severity := range severities {
 		fetchVulnerabilities(ctx, severity)
 	}
