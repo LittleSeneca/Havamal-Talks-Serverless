@@ -10,6 +10,11 @@ Parameters:
     Description: S3 Bucket for Lambda Code
 
 Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref LambdaS3Bucket
+
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -57,4 +62,4 @@ Outputs:
     Value: !GetAtt MyLambdaFunction.Arn
   S3BucketName:
     Description: "S3 Bucket for Lambda Code"
-    Value: !Ref LambdaS3Bucket
+    Value: !Ref S3Bucket
