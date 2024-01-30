@@ -49,6 +49,7 @@ jobs:
           AWS_REGION: us-east-1
 
       - name: Deploy Lambda Function using CloudFormation
+        id: deploy_lambda
         run: |
           aws cloudformation deploy \
             --template-file lambda-fetch-template.yml \
@@ -61,7 +62,7 @@ jobs:
           AWS_REGION: us-east-1
 
       - name: Delete Stack if Deployment Fails
-        if: ${{ failure() }}
+        if: failure() && steps.deploy_lambda.outcome == 'failure'
         run: aws cloudformation delete-stack --stack-name havamal-talks-serverless-lambda
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
