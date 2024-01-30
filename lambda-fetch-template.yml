@@ -34,6 +34,9 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub 'arn:aws:s3:::${LambdaS3Bucket}/*'
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt HavamalTalksUnfilteredQueue.Arn
 
   LambdaFunctionCritical:
     Type: AWS::Lambda::Function
@@ -95,6 +98,11 @@ Resources:
           NVD_API_KEY: !Ref NvdApiKey
           SEVERITY: "LOW"
 
+  HavamalTalksUnfilteredQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: "havamal-talks-serverless-unfiltered"
+
   # Repeat the above resource block for High, Medium, and Low, changing the FunctionName and SEVERITY variable
 
 Outputs:
@@ -122,4 +130,11 @@ Outputs:
   LambdaFunctionLowlARN:
     Description: "ARN of the Critical Lambda function"
     Value: !GetAtt LambdaFunctionLow.Arn
+  HavamalTalksUnfilteredQueueURL:
+    Description: "URL of the Unfiltered SQS Queue"
+    Value: !Ref HavamalTalksUnfilteredQueue
+  HavamalTalksUnfilteredQueueARN:
+    Description: "ARN of the Unfiltered SQS Queue"
+    Value: !GetAtt HavamalTalksUnfilteredQueue.Arn
+  
   # Repeat Outputs for High, Medium, and Low
