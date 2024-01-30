@@ -7,6 +7,17 @@ on:
     branches: [ main ]
 
 jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Run cleanup.sh script
+        run: |
+          chmod +x cleanup.sh
+          ./cleanup.sh
+
   deploy-s3-bucket:
     runs-on: ubuntu-latest
     steps:
