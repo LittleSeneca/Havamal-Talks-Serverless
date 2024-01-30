@@ -41,7 +41,7 @@ Resources:
       FunctionName: havamal-talks-serverless-fetch
       Handler: bootstrap
       Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: function.zip
