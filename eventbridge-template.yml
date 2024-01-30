@@ -1,0 +1,25 @@
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Trigger Lambda functions hourly"
+      ScheduleExpression: "rate(1 hour)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LambdaFunctionCritical.Arn
+          Id: "TargetFunctionCritical"
+        - Arn: !GetAtt LambdaFunctionHigh.Arn
+          Id: "TargetFunctionHigh"
+        - Arn: !GetAtt LambdaFunctionMedium.Arn
+          Id: "TargetFunctionMedium"
+        - Arn: !GetAtt LambdaFunctionLow.Arn
+          Id: "TargetFunctionLow"
+
+  LambdaPermissionForEventBridgeCritical:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunctionCritical.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+  # Repeat LambdaPermissionForEventBridge for High, Medium, and Low functions

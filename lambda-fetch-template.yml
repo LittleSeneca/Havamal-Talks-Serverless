@@ -103,7 +103,33 @@ Resources:
     Properties:
       QueueName: "havamal-talks-serverless-unfiltered"
 
-  # Repeat the above resource block for High, Medium, and Low, changing the FunctionName and SEVERITY variable
+  EventSourceMappingCritical:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HavamalTalksUnfilteredQueue.Arn
+      FunctionName: !GetAtt LambdaFunctionCritical.Arn
+      Enabled: true
+
+  EventSourceMappingHigh:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HavamalTalksUnfilteredQueue.Arn
+      FunctionName: !GetAtt LambdaFunctionHigh.Arn
+      Enabled: true
+
+  EventSourceMappingMedium:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HavamalTalksUnfilteredQueue.Arn
+      FunctionName: !GetAtt LambdaFunctionMedium.Arn
+      Enabled: true
+
+  EventSourceMappingLow:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HavamalTalksUnfilteredQueue.Arn
+      FunctionName: !GetAtt LambdaFunctionLow.Arn
+      Enabled: true
 
 Outputs:
   LambdaFunctionCriticalName:
@@ -113,22 +139,22 @@ Outputs:
     Description: "ARN of the Critical Lambda function"
     Value: !GetAtt LambdaFunctionCritical.Arn
   LambdaFunctionHighName:
-    Description: "Name of the Critical Lambda function"
+    Description: "Name of the High Severity Lambda function"
     Value: !Ref LambdaFunctionHigh
   LambdaFunctionHighARN:
-    Description: "ARN of the Critical Lambda function"
+    Description: "ARN of the High Severity Lambda function"
     Value: !GetAtt LambdaFunctionHigh.Arn
   LambdaFunctionMediumName:
-    Description: "Name of the Critical Lambda function"
+    Description: "Name of the Medium Severity Lambda function"
     Value: !Ref LambdaFunctionMedium
   LambdaFunctionMediumARN:
-    Description: "ARN of the Critical Lambda function"
+    Description: "ARN of the Medium Severity Lambda function"
     Value: !GetAtt LambdaFunctionMedium.Arn
   LambdaFunctionLowName:
-    Description: "Name of the Critical Lambda function"
+    Description: "Name of the Low Severity Lambda function"
     Value: !Ref LambdaFunctionLow
-  LambdaFunctionLowlARN:
-    Description: "ARN of the Critical Lambda function"
+  LambdaFunctionLowARN:
+    Description: "ARN of the Low Severity Lambda function"
     Value: !GetAtt LambdaFunctionLow.Arn
   HavamalTalksUnfilteredQueueURL:
     Description: "URL of the Unfiltered SQS Queue"
@@ -136,5 +162,3 @@ Outputs:
   HavamalTalksUnfilteredQueueARN:
     Description: "ARN of the Unfiltered SQS Queue"
     Value: !GetAtt HavamalTalksUnfilteredQueue.Arn
-  
-  # Repeat Outputs for High, Medium, and Low

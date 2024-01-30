@@ -50,9 +50,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
 
-  build-upload-and-deploy-lambda:
+  build-lambda:
     runs-on: ubuntu-latest
-    needs: deploy-s3-bucket
+    needs: deploy-s3-bucket 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -88,8 +88,23 @@ jobs:
           AWS_REGION: us-east-1
 
       - name: Delete Stack if Deployment Fails
-        if: failure() && steps.deploy_lambda.outcome == 'failure'
+        if: failure() && steps.deploy_lambda.outcome == 'failure' 
         run: aws cloudformation delete-stack --stack-name havamal-talks-serverless-lambda
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+  build-eventbridge:
+    runs-on: ubuntu-latest
+    needs: deploy-s3-bucket 
+    steps:
+      - name: Deploy EventBridge Rule using CloudFormation
+        run: |
+          aws cloudformation deploy \
+            --template-file eventbridge-template.yml \
+            --stack-name havamal-talks-serverless-eventbridge \
+            --capabilities CAPABILITY_IAM
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
