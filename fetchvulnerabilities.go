@@ -51,6 +51,11 @@ func fetchVulnerabilities(ctx context.Context, severity string) {
 
 	// Check if the HTTP request was not successful.
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusForbidden {
+			fmt.Printf("HTTP request failed with status code 403 Forbidden [Likely Rate Throttling] for severity %s. Skipping...\n", severity)
+			return
+		}
+
 		fmt.Printf("HTTP request failed with status code: %s\n", resp.Status)
 		body, _ := io.ReadAll(resp.Body) // Read the response body even in case of an error.
 		fmt.Println("Response body:", string(body))
