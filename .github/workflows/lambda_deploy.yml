@@ -18,6 +18,7 @@ jobs:
           aws cloudformation deploy \
             --template-file s3-template.yml \
             --stack-name havamal-talks-serverless-s3 \
+            --parameter-overrides LambdaS3Bucket=${{ secrets.S3_BUCKET_NAME }} NvdApiKey=${{ secrets.NVD_API_KEY }} \
             --capabilities CAPABILITY_IAM
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
