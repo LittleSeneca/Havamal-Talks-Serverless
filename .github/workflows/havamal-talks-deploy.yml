@@ -1,0 +1,40 @@
+name: Havamal Talks Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Zip Lambda Function Code
+      run: |
+        zip havamal-talks-fetch.zip havamal-talks-fetch.py
+        zip havamal-talks-filter.zip havamal-talks-filter.py
+        zip havamal-talks-format.zip havamal-talks-format.py
+
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file havamal-talks-cloudformation.yml \
+          --stack-name havamal-talks-stack \
+          --capabilities CAPABILITY_NAMED_IAM
+
+    - name: Update Lambda Functions
+      run: |
+        aws lambda update-function-code --function-name HavamalTalksFetchLambda --zip-file fileb://havamal-talks-fetch.zip
+        aws lambda update-function-code --function-name HavamalTalksFilterLambda --zip-file fileb://havamal-talks-filter.zip
+        aws lambda update-function-code --function-name HavamalTalksFormatLambda --zip-file fileb://havamal-talks-format.zip

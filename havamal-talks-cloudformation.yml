@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Havamal Talks Infrastructure
+
+Resources:
+  HavamalTalksUnfilteredQueue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      MessageRetentionPeriod: 300
+      QueueName: havamal-talks-unfiltered
+
+  HavamalTalksFilteredQueue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      MessageRetentionPeriod: 300
+      QueueName: havamal-talks-filtered
+
+  HavamalTalksFormattedQueue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      MessageRetentionPeriod: 300
+      QueueName: havamal-talks-formatted
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaSQSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueUrl
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  HavamalTalksFetchLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: havamal-talks-fetch.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              print("This is a dummy handler for HavamalTalksFetchLambda")
+      Environment:
+        Variables:
+          UNFILTERED_QUEUE_URL: !Ref HavamalTalksUnfilteredQueue
+
+  HavamalTalksFilterLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: havamal-talks-filter.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile: |
+            def handler(event, context):
+                print("This is a dummy handler for HavamalTalksFilterLambda")
+      Environment:
+        Variables:
+          FILTERED_QUEUE_URL: !Ref HavamalTalksFilteredQueue
+          UNFILTERED_QUEUE_URL: !Ref HavamalTalksUnfilteredQueue
+
+  HavamalTalksFormatLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: havamal-talks-format.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              print("This is a dummy handler for HavamalTalksFormatLambda")
+      Environment:
+        Variables:
+          FORMATTED_QUEUE_URL: !Ref HavamalTalksFormattedQueue
+          FILTERED_QUEUE_URL: !Ref HavamalTalksFilteredQueue
+
+  HavamalTalksEventBridge:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: 'rate(1 hour)'
+      Targets:
+        - Arn: !GetAtt HavamalTalksFetchLambda.Arn
+          Id: "HavamalTalksFetchLambdaTarget"
+
+Outputs:
+  UnfilteredQueueURL:
+    Description: "URL of the Unfiltered SQS Queue"
+    Value: !Ref HavamalTalksUnfilteredQueue
+
+  FilteredQueueURL:
+    Description: "URL of the Filtered SQS Queue"
+    Value: !Ref HavamalTalksFilteredQueue
+
+  FormattedQueueURL:
+    Description: "URL of the Formatted SQS Queue"
+    Value: !Ref HavamalTalksFormattedQueue
